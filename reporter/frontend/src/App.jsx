@@ -48,10 +48,18 @@ function App() {
   // Derived filtered records grouped by Pin
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
-      const matchProject = selectedProject ? String(r.project_id) === selectedProject : true;
-      const matchPlan = selectedPlan ? String(r.plan_id) === selectedPlan : true;
-      const rDate = String(r.timeline).match(/^(\d{4}-\d{2}-\d{2})/) ? String(r.timeline).match(/^(\d{4}-\d{2}-\d{2})/)[1] : '';
+      const matchProject = selectedProject 
+        ? String(r.project_id || '').trim() === selectedProject.trim() 
+        : true;
+      const matchPlan = selectedPlan 
+        ? String(r.plan_id || '').trim() === selectedPlan.trim() 
+        : true;
+      
+      const rDate = String(r.timeline || '').match(/^(\d{4}-\d{2}-\d{2})/) 
+        ? String(r.timeline).match(/^(\d{4}-\d{2}-\d{2})/)[1] 
+        : '';
       const matchDate = selectedDate ? rDate === selectedDate : true;
+      
       return matchProject && matchPlan && matchDate;
     });
   }, [records, selectedProject, selectedPlan, selectedDate]);
@@ -63,7 +71,7 @@ function App() {
 
   // Handle generating preview
   const handleGeneratePreview = () => {
-    setPreviewRecords(filteredRecords);
+    setPreviewRecords([...filteredRecords]); // Create a shallow copy to ensure purity
   };
 
   const handlePrint = () => {
@@ -80,7 +88,7 @@ function App() {
             <label>Project</label>
             <select className="form-control" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}>
               <option value="">All Projects</option>
-              {projects.map(p => <option key={p} value={p}>{p}</option>)}
+              {projects.map(p => <option key={p} value={str(p)}>{str(p)}</option>)}
             </select>
           </div>
           
@@ -88,7 +96,7 @@ function App() {
             <label>Plan</label>
             <select className="form-control" value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)} disabled={!selectedProject && plans.length === 0}>
               <option value="">All Plans</option>
-              {plans.map(p => <option key={p} value={p}>{p}</option>)}
+              {plans.map(p => <option key={p} value={str(p)}>{str(p)}</option>)}
             </select>
           </div>
 
@@ -96,7 +104,7 @@ function App() {
             <label>Date</label>
             <select className="form-control" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}>
               <option value="">All Dates</option>
-              {dates.map(d => <option key={d} value={d}>{d}</option>)}
+              {dates.map(d => <option key={d} value={str(d)}>{str(d)}</option>)}
             </select>
           </div>
 
@@ -133,19 +141,22 @@ function App() {
 
         {previewRecords && previewRecords.length > 0 && (
           <div className="report-container">
-            {/* Provide context for the report if specific filters are chosen */}
-            {(selectedProject && selectedPlan) && (
-              <div className="report-header no-print">
-                <h2>Project: {selectedProject} | Plan: {selectedPlan}</h2>
-                <div className="report-meta">Date: {selectedDate || 'All Time'} | Showing {previewRecords.length} Pins</div>
+            {/* Provide context for the report */}
+            <div className="report-header no-print">
+              <h2>Previewing Report</h2>
+              <div className="report-meta">
+                {selectedProject && <span>Project: {selectedProject} | </span>}
+                {selectedPlan && <span>Plan: {selectedPlan} | </span>}
+                {selectedDate && <span>Date: {selectedDate} | </span>}
+                <span>Showing {previewRecords.length} Pins</span>
               </div>
-            )}
+            </div>
 
             {/* Group records by Plan */}
             {(() => {
-              // 1. Group by Plan
+              // 1. Group the preview data by Plan
               const recordsByPlan = {};
-              filteredRecords.forEach(record => {
+              previewRecords.forEach(record => {
                 const planId = record.plan_id || 'Unknown Plan';
                 if (!recordsByPlan[planId]) {
                   recordsByPlan[planId] = [];
