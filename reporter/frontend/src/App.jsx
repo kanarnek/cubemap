@@ -1,6 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './index.css';
 
+const LoadingModal = ({ isOpen, message, progress }) => {
+  if (!isOpen) return null;
+  const percent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+  
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="spinner-large"></div>
+        <h3>{message || 'Processing...'}</h3>
+        
+        <div className="progress-container">
+          <div className="progress-bar-bg">
+            <div className="progress-bar-filler" style={{ width: `${percent}%` }}></div>
+          </div>
+          <div className="progress-text">
+            {progress.current} / {progress.total} Pins ({percent}%)
+          </div>
+        </div>
+
+        <p className="status-text">{progress.status || 'กำลังดึงข้อมูลและประมวลผลรูปภาพ 360 องศา'}</p>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,8 +36,12 @@ function App() {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
+
   // Fetch data
-  useEffect(() => {
+  const fetchRecords = () => {
+    setLoading(true);
     fetch('http://localhost:8088/api/records')
       .then(res => res.json())
       .then(data => {
@@ -24,6 +53,10 @@ function App() {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRecords();
   }, []);
 
   // Helper str
@@ -47,21 +80,24 @@ function App() {
 
   // Derived filtered records grouped by Pin
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
+    console.log("Filtering with:", { selectedProject, selectedPlan, selectedDate });
+    const result = records.filter(r => {
       const matchProject = selectedProject 
-        ? String(r.project_id || '').trim() === selectedProject.trim() 
+        ? String(r.project_id || '').trim() === String(selectedProject).trim() 
         : true;
       const matchPlan = selectedPlan 
-        ? String(r.plan_id || '').trim() === selectedPlan.trim() 
+        ? String(r.plan_id || '').trim() === String(selectedPlan).trim() 
         : true;
       
-      const rDate = String(r.timeline || '').match(/^(\d{4}-\d{2}-\d{2})/) 
-        ? String(r.timeline).match(/^(\d{4}-\d{2}-\d{2})/)[1] 
-        : '';
-      const matchDate = selectedDate ? rDate === selectedDate : true;
+      const rDateFull = String(r.timeline || '');
+      const matchDate = selectedDate 
+        ? rDateFull.includes(String(selectedDate))
+        : true;
       
       return matchProject && matchPlan && matchDate;
     });
+    console.log("Filtered count:", result.length);
+    return result;
   }, [records, selectedProject, selectedPlan, selectedDate]);
 
   // Clear preview when filters change
@@ -69,9 +105,104 @@ function App() {
     setPreviewRecords(null);
   }, [selectedProject, selectedPlan, selectedDate]);
 
-  // Handle generating preview
-  const handleGeneratePreview = () => {
-    setPreviewRecords([...filteredRecords]); // Create a shallow copy to ensure purity
+  // Handle generating preview (Trigger Webhook -> Process Jobs Individually -> Refresh)
+  const handleGeneratePreview = async () => {
+    setProcessing(true);
+    setProgress({ current: 0, total: 0, status: 'Calling n8n...' });
+    setError(null);
+    setPreviewRecords(null);
+    
+    try {
+      // 1. Fetch Job List from n8n (via local proxy)
+      const fetchResponse = await fetch('http://localhost:8088/api/fetch-n8n-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: selectedProject,
+          plan_id: selectedPlan,
+          date: selectedDate
+        })
+      });
+
+      if (!fetchResponse.ok) {
+        const errData = await fetchResponse.json();
+        throw new Error(errData.error || 'Failed to fetch jobs from automation');
+      }
+      
+      const { jobs } = await fetchResponse.json();
+      if (!jobs || jobs.length === 0) {
+        throw new Error('No records found in automation database for these filters');
+      }
+
+      setProgress({ current: 0, total: jobs.length, status: `Found ${jobs.length} pins. Starting extraction...` });
+
+      // 2. Loop through jobs and process each individually
+      for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        const pinLabel = job.pin || job.pin_id || (i + 1);
+        
+        setProgress(prev => ({ ...prev, status: `Processing Pin: ${pinLabel} (${i + 1}/${jobs.length})` }));
+
+        const res = await fetch('http://localhost:8088/api/process-single-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(job)
+        });
+
+        if (!res.ok) {
+          console.error(`Failed to process job ${i}:`, await res.text());
+          // We continue with other jobs even if one fails
+        }
+
+        setProgress(prev => ({ ...prev, current: i + 1 }));
+      }
+
+      setProgress(prev => ({ ...prev, status: 'Finalizing report...' }));
+
+      // 3. Fetch fresh records from Google Sheet
+      const res = await fetch('http://localhost:8088/api/records');
+      const data = await res.json();
+      
+      if (data.success) {
+        console.log("Fetched records from Google Sheets:", data.data);
+        setRecords(data.data);
+        const freshFiltered = data.data.filter(r => {
+          const rProj = String(r.project_id || '').trim();
+          const sProj = String(selectedProject).trim();
+          const matchProject = selectedProject ? rProj === sProj : true;
+          
+          const rPlan = String(r.plan_id || '').trim();
+          const sPlan = String(selectedPlan).trim();
+          const matchPlan = selectedPlan ? rPlan === sPlan : true;
+          
+          const rDateFull = String(r.timeline || '');
+          const matchDate = selectedDate ? rDateFull.includes(String(selectedDate)) : true;
+          
+          if (!matchProject || !matchPlan || !matchDate) {
+             // Optional: log specific mismatches if needed for first few rows
+          }
+          
+          return matchProject && matchPlan && matchDate;
+        });
+        
+        console.log("Freshly filtered records:", freshFiltered);
+        
+        if (freshFiltered.length === 0) {
+          console.warn("No records matched after refresh. Filters:", { selectedProject, selectedPlan, selectedDate });
+          if (data.data.length > 0) {
+            console.log("Sample record from sheet:", data.data[0]);
+          }
+        }
+        setPreviewRecords(freshFiltered);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Workflow Error: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handlePrint = () => {
@@ -102,14 +233,26 @@ function App() {
 
           <div className="form-group">
             <label>Date</label>
-            <select className="form-control" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}>
-              <option value="">All Dates</option>
-              {dates.map(d => <option key={d} value={str(d)}>{str(d)}</option>)}
-            </select>
+            <input 
+              type="date" 
+              className="form-control" 
+              value={selectedDate} 
+              onChange={e => setSelectedDate(e.target.value)}
+            />
           </div>
 
-          <button className="btn btn-secondary" onClick={handleGeneratePreview} disabled={filteredRecords.length === 0}>
-            🔄 Generate Preview ({filteredRecords.length} Pins)
+          <button 
+            className={`btn ${processing ? 'btn-loading' : 'btn-secondary'}`} 
+            onClick={handleGeneratePreview} 
+            disabled={processing || (filteredRecords.length === 0 && !selectedDate)}
+          >
+            {processing ? (
+              <>
+                <div className="spinner-small"></div> Processing...
+              </>
+            ) : (
+              <>🔄 Generate Preview & Extract</>
+            )}
           </button>
 
           <button className="btn" onClick={handlePrint} disabled={!previewRecords || previewRecords.length === 0}>
@@ -256,6 +399,12 @@ function App() {
           </div>
         )}
       </main>
+
+      <LoadingModal 
+        isOpen={processing} 
+        message="กำลังประมวลผลรูปภาพ..." 
+        progress={progress}
+      />
     </div>
   );
 }
