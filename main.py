@@ -5,10 +5,10 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from models import CubemapJob, CubemapResult
-from fetcher import ImageFetcher
-from extractor import CubemapExtractor
-from uploader import R2Uploader
-from sheet_writer import SheetWriter
+from processor.fetcher import ImageFetcher
+from processor.extractor import CubemapExtractor
+from processor.uploader import R2Uploader
+from processor.sheet_writer import SheetWriter
 
 # Configure logging
 logging.basicConfig(

@@ -6,7 +6,7 @@ import os
 # Add parent directory to path to import config and modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sheet_writer import SheetWriter
+from processor.sheet_writer import SheetWriter
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for the frontend React app
