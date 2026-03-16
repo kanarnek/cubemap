@@ -229,6 +229,14 @@ body {
   flex-direction: column;
 }
 
+.report-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding-bottom: 5rem;
+  transition: transform 0.2s ease-out;
+}
+
 .pin-section {
   display: flex;
   flex-direction: column;

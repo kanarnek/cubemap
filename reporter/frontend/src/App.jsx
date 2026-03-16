@@ -128,6 +128,7 @@ function App() {
   const [masterData, setMasterData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [zoom, setZoom] = useState(0.75); // Added zoom state for fitting
 
   // Filters
   const [selectedProject, setSelectedProject] = useState('');
@@ -539,6 +540,22 @@ function App() {
             />
           </div>
 
+          <div className="form-group no-print">
+            <label>Preview Zoom: {Math.round(zoom * 100)}%</label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input 
+                type="range" 
+                min="0.2" 
+                max="1.5" 
+                step="0.05" 
+                value={zoom} 
+                onChange={e => setZoom(parseFloat(e.target.value))}
+                style={{ flex: 1 }}
+              />
+              <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => setZoom(0.75)}>Fit</button>
+            </div>
+          </div>
+
           <div className="sidebar-actions">
             <button 
               className={`btn ${processing ? 'btn-loading' : 'btn-secondary'}`} 
@@ -644,7 +661,7 @@ function App() {
           });
 
           return (
-            <div className="report-container">
+            <div className="report-container" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
               {Object.entries(recordsByPlan).map(([planId, planRecords]) => {
                 const pages = Array.from({ length: Math.ceil(planRecords.length / 3) });
                 const floorPlanUrl = planImageMap[planId];
