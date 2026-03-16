@@ -72,7 +72,7 @@ def get_master_data():
     try:
         # Assuming URL /webhook/get-master-data is created in n8n
         n8n_url = 'https://ct-automation.builk.com/webhook/get-master-data'
-        response = requests.get(n8n_url, timeout=30)
+        response = requests.get(n8n_url, timeout=90)
         response.raise_for_status()
         data = response.json()
         
@@ -109,7 +109,7 @@ def get_available_dates():
 
         # Assuming URL /webhook/get-available-dates is created in n8n
         n8n_url = 'https://ct-automation.builk.com/webhook/get-available-dates'
-        response = requests.post(n8n_url, json=filters, timeout=30)
+        response = requests.post(n8n_url, json=filters, timeout=90)
         response.raise_for_status()
         data = response.json()
         
@@ -170,7 +170,7 @@ def fetch_n8n_jobs():
         filters = request.json
         n8n_url = 'https://ct-automation.builk.com/webhook/n8ngetdata'
         
-        response = requests.post(n8n_url, json=filters, timeout=30)
+        response = requests.post(n8n_url, json=filters, timeout=90)
         response.raise_for_status()
         jobs_data = response.json()
         print(f"DEBUG: RAW data from n8n: {jobs_data}")
