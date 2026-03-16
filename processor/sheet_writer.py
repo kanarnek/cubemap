@@ -15,8 +15,9 @@ class SheetWriter:
         ]
         
         # Check if GOOGLE_SERVICE_ACCOUNT_JSON is a raw JSON string or a file path
-        if GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SERVICE_ACCOUNT_JSON.strip().startswith("{"):
-            info = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        creds_content = (GOOGLE_SERVICE_ACCOUNT_JSON or "").strip()
+        if creds_content.startswith("{"):
+            info = json.loads(creds_content)
             self.credentials = Credentials.from_service_account_info(info, scopes=self.scope)
         else:
             self.credentials = Credentials.from_service_account_file(
