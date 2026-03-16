@@ -25,14 +25,14 @@ class CubemapResult:
     def to_sheet_row(self) -> list:
         """Converts the result to a list of values for Google Sheets."""
         return [
-            "=ROW()-1",  # id (auto-increment based on row number)
-            self.job.project_id,
-            self.job.plan_id,
-            self.job.project_name or "",
-            self.job.plan_name or "",
-            self.job.pin_id,
-            self.job.timeline,
-            self.job.source_path,
+            "=ROW()-1",           # id
+            self.job.project_id,  # project_id
+            self.job.plan_id,     # plan_id
+            self.job.project_name or "", # project
+            self.job.plan_name or "",    # plan
+            self.job.pin_id,      # pin_id
+            self.job.timeline,    # timeline
+            self.job.source_path, # source_path
             self.face_urls.get("front", ""),
             self.face_urls.get("back", ""),
             self.face_urls.get("left", ""),
