@@ -4,6 +4,7 @@ from typing import List, Optional, Dict
 from config import GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_SHEET_ID
 from models import CubemapResult
 import json
+import os
 
 class SheetWriter:
     """Handles reading and writing metadata to Google Sheets."""
