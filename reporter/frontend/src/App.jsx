@@ -471,11 +471,15 @@ function App() {
   };
 
   return (
-    <div className="app">
-      {/* Header & Controls (Hidden when printing) */}
-      <header className="header">
-        <h1>📸 CubeMap Site Reporter</h1>
-        <div className="controls">
+    <div className="app-layout">
+      {/* Sidebar - Controls (Hidden when printing) */}
+      <aside className="sidebar no-print">
+        <div className="sidebar-header">
+          <h1>📸 CubeMap</h1>
+          <p>Site Reporter</p>
+        </div>
+
+        <div className="sidebar-content">
           <div className="form-group">
             <label>Project</label>
             <select className="form-control" value={selectedProject} onChange={e => {
@@ -535,31 +539,33 @@ function App() {
             />
           </div>
 
-          <button 
-            className={`btn ${processing ? 'btn-loading' : 'btn-secondary'}`} 
-            onClick={handleGeneratePreview} 
-            disabled={processing || !selectedProject || !selectedPlan || !selectedDate}
-            title={!selectedProject || !selectedPlan || !selectedDate ? 'กรุณาเลือก Project, Plan และ Date ให้ครบ' : ''}
-          >
-            {processing ? (
-              <>
-                <div className="spinner-small"></div> Processing...
-              </>
-            ) : (
-              <>🔄 Generate Preview & Extract</>
-            )}
-          </button>
+          <div className="sidebar-actions">
+            <button 
+              className={`btn ${processing ? 'btn-loading' : 'btn-secondary'}`} 
+              onClick={handleGeneratePreview} 
+              disabled={processing || !selectedProject || !selectedPlan || !selectedDate}
+              title={!selectedProject || !selectedPlan || !selectedDate ? 'กรุณาเลือก Project, Plan และ Date ให้ครบ' : ''}
+            >
+              {processing ? (
+                <>
+                  <div className="spinner-small"></div> Processing...
+                </>
+              ) : (
+                <>🔄 Generate Preview & Extract</>
+              )}
+            </button>
 
-          <button className="btn" onClick={handlePrint} disabled={!previewRecords || previewRecords.length === 0}>
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-            Print Report (A4)
-          </button>
+            <button className="btn btn-primary" onClick={handlePrint} disabled={!previewRecords || previewRecords.length === 0}>
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Print Report (A4)
+            </button>
+          </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Main Content */}
-      <main className="container">
-        {loading && <div className="spinner"></div>}
+      {/* Main Preview Area */}
+      <main className="preview-area">
+        {loading && <div className="spinner-container"><div className="spinner"></div></div>}
         
         {error && <div className="empty-state">Error loading data: {error}</div>}
 
@@ -639,16 +645,6 @@ function App() {
 
           return (
             <div className="report-container">
-              <div className="report-header no-print">
-                <h2>Previewing Report</h2>
-                <div className="report-meta">
-                  {selectedProject && <span>Project: {projectNameMap[selectedProject] || selectedProject} | </span>}
-                  {selectedPlan && <span>Plan: {planNameMap[selectedPlan] || selectedPlan} | </span>}
-                  {selectedDate && <span>Date: {selectedDate} | </span>}
-                  <span>Showing {previewRecords.length} Pins</span>
-                </div>
-              </div>
-
               {Object.entries(recordsByPlan).map(([planId, planRecords]) => {
                 const pages = Array.from({ length: Math.ceil(planRecords.length / 3) });
                 const floorPlanUrl = planImageMap[planId];
@@ -729,3 +725,4 @@ function App() {
 }
 
 export default App;
+
