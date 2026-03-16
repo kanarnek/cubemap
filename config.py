@@ -17,12 +17,21 @@ R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL")  # e.g., https://pub-xxxx.r2.dev
 
 # Google Sheets Configuration
 _svc_acc = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
-if _svc_acc.startswith("{"):
-    # It's a raw JSON string (common for Vercel environment variables)
+# Handle potential wrapping in quotes
+if _svc_acc.startswith("{") or (_svc_acc.startswith('"') and _svc_acc.endswith('"') and "{" in _svc_acc):
+    # It's a raw JSON string (potentially quoted)
+    if _svc_acc.startswith('"'):
+        _svc_acc = _svc_acc[1:-1].replace('\\"', '"') # Basic unquote/unescape
     GOOGLE_SERVICE_ACCOUNT_JSON = _svc_acc
 elif _svc_acc:
-    # It's a path to a file
-    GOOGLE_SERVICE_ACCOUNT_JSON = str(BASE_DIR / _svc_acc)
+    # It's a path to a file - only resolve if it exists
+    full_path = BASE_DIR / _svc_acc
+    if full_path.exists():
+        GOOGLE_SERVICE_ACCOUNT_JSON = str(full_path)
+    else:
+        # If it doesn't exist, we keep it as is (maybe it's meant to be JSON but malformed)
+        # or we set it to the raw string and let SheetWriter decide
+        GOOGLE_SERVICE_ACCOUNT_JSON = _svc_acc
 else:
     GOOGLE_SERVICE_ACCOUNT_JSON = None
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")

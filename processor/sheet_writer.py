@@ -14,14 +14,26 @@ class SheetWriter:
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # Check if GOOGLE_SERVICE_ACCOUNT_JSON is a raw JSON string or a file path
+        # Extremely robust check for GOOGLE_SERVICE_ACCOUNT_JSON
         creds_content = (GOOGLE_SERVICE_ACCOUNT_JSON or "").strip()
-        if creds_content.startswith("{"):
+        
+        # Check if it's a JSON string (could be wrapped in quotes by Vercel)
+        is_json = creds_content.startswith("{") or (creds_content.startswith('"') and creds_content.endswith('"') and "{" in creds_content)
+        
+        if is_json:
+            if creds_content.startswith('"'):
+                creds_content = creds_content[1:-1].replace('\\"', '"')
             info = json.loads(creds_content)
             self.credentials = Credentials.from_service_account_info(info, scopes=self.scope)
-        else:
+        elif creds_content and os.path.exists(creds_content):
             self.credentials = Credentials.from_service_account_file(
-                GOOGLE_SERVICE_ACCOUNT_JSON, scopes=self.scope
+                creds_content, scopes=self.scope
+            )
+        else:
+            raise ValueError(
+                f"Missing or invalid Google Credentials. Value found: '{creds_content[:20]}...'. "
+                "Ensure GOOGLE_SERVICE_ACCOUNT_JSON is set to the ACTUAL JSON CONTENT from your .json file "
+                "in the Vercel Environment Variables dashboard."
             )
         self.client = gspread.authorize(self.credentials)
         self.sheet = self.client.open_by_key(GOOGLE_SHEET_ID).worksheet("cubemap_records")
