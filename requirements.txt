@@ -6,3 +6,4 @@ google-auth>=2.0
 python-dotenv>=1.0
 flask
 flask-cors
+requests
