@@ -1,0 +1,8 @@
+{
+  "name": "cubemap-root",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd reporter/frontend && npm install && npm run build",
+    "install": "cd reporter/frontend && npm install"
+  }
+}

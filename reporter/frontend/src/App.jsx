@@ -143,8 +143,8 @@ function App() {
     try {
       // Fetch both processed records and master data in parallel
       const [recordsRes, masterRes] = await Promise.all([
-        fetch('http://localhost:8088/api/records').then(res => res.json()),
-        fetch('http://localhost:8088/api/master-data').then(res => res.json()).catch(() => ({ success: false }))
+        fetch('/api/records').then(res => res.json()),
+        fetch('/api/master-data').then(res => res.json()).catch(() => ({ success: false }))
       ]);
 
       if (recordsRes.success) {
@@ -228,7 +228,7 @@ function App() {
     }
 
     setLoadingDates(true);
-    fetch('http://localhost:8088/api/available-dates', {
+    fetch('/api/available-dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -330,7 +330,7 @@ function App() {
     
     try {
       // 1. Fetch Job List from n8n (via local proxy)
-      const fetchResponse = await fetch('http://localhost:8088/api/fetch-n8n-jobs', {
+      const fetchResponse = await fetch('/api/fetch-n8n-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -372,7 +372,7 @@ function App() {
         
         setProgress(prev => ({ ...prev, status: `Processing Pin: ${pinLabel} (${i + 1}/${jobs.length})` }));
 
-        const res = await fetch('http://localhost:8088/api/process-single-job', {
+        const res = await fetch('/api/process-single-job', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(job)
@@ -389,7 +389,7 @@ function App() {
       setProgress(prev => ({ ...prev, status: 'Finalizing report...' }));
 
       // 3. Fetch fresh records from Google Sheet
-      const res = await fetch('http://localhost:8088/api/records');
+      const res = await fetch('/api/records');
       const data = await res.json();
       
       if (data.success) {
