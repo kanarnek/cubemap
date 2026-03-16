@@ -1,0 +1,42 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "get-master-data",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "master-data-webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n      pr.\"project_id\"          AS project_id\n    , pr.\"name\"                AS project_name\n    , p.\"plan_id\"              AS plan_id\n    , p.\"plan_name\"            AS plan_name\n    , p.\"plan_url\"             AS plan_image_url\n    , sup.\"set_up_position_id\" AS pin_id\n    , sup.\"post_number\"        AS pos_number\n    , sup.\"pos_x\"              AS pos_x\n    , sup.\"pos_y\"              AS pos_y\nFROM public.\"PROJECT\" pr\nJOIN public.\"PLAN\" p\n  ON p.\"project_id\" = pr.\"project_id\"\n AND COALESCE(p.\"is_delete\", FALSE) = FALSE\nLEFT JOIN public.\"SET_UP_POSITION\" sup\n  ON sup.\"plan_id\" = p.\"plan_id\"\nWHERE pr.\"company_id\" = 177\n  AND COALESCE(pr.\"is_delete\", FALSE) = FALSE\nORDER BY\n      pr.\"name\"\n    , p.\"plan_name\"\n    , sup.\"post_number\";",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

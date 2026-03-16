@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
+from datetime import datetime, timedelta, timezone
 import sys
 import os
 
@@ -65,6 +66,103 @@ def get_records():
             'error': str(e)
         }), 500
 
+@app.route('/api/master-data', methods=['GET'])
+def get_master_data():
+    """Fetches master project and plan data from n8n."""
+    try:
+        # Assuming URL /webhook/get-master-data is created in n8n
+        n8n_url = 'https://ct-automation.builk.com/webhook/get-master-data'
+        response = requests.get(n8n_url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        # In case n8n returns wrapped data like [{ "project_id": ... }] or [{ "json": { ... } }]
+        items = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and 'project_id' in item:
+                    items.append(item)
+                elif isinstance(item, dict) and 'json' in item:
+                    items.append(item['json'])
+                else:
+                    items.append(item)
+        elif isinstance(data, dict):
+             if 'items' in data:
+                 items = data['items']
+             else:
+                 items = [data]
+        else:
+             items = data
+
+        return jsonify({'success': True, 'data': items})
+    except Exception as e:
+        print(f"ERROR fetching master data from n8n: {str(e)}")
+        return jsonify({'success': False, 'error': f'Failed to fetch master data: {str(e)}'}), 502
+
+@app.route('/api/available-dates', methods=['POST'])
+def get_available_dates():
+    """Fetches available dates from n8n based on project and plan."""
+    try:
+        filters = request.json
+        req_proj = str(filters.get('project_id', '')).strip()
+        req_plan = str(filters.get('plan_id', '')).strip()
+
+        # Assuming URL /webhook/get-available-dates is created in n8n
+        n8n_url = 'https://ct-automation.builk.com/webhook/get-available-dates'
+        response = requests.post(n8n_url, json=filters, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Unwrap data format from n8n
+        items = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and 'json' in item:
+                    items.append(item['json'])
+                else:
+                    items.append(item)
+        elif isinstance(data, dict):
+            if 'items' in data:
+                items = data['items']
+            else:
+                items = [data]
+        else:
+            items = data
+            
+        dates = []
+        for item in items:
+            if isinstance(item, dict):
+                item_proj = str(item.get('project_id', '')).strip()
+                item_plan = str(item.get('plan_id', '')).strip()
+                
+                # Filter by project and plan if they were selected in the frontend
+                match_proj = not req_proj or item_proj == req_proj
+                match_plan = not req_plan or item_plan == req_plan
+                
+                if match_proj and match_plan and 'timeline' in item:
+                    raw_tl = str(item['timeline'])
+                    # n8n returns dates in UTC (e.g. '2025-12-04T17:00:00.000Z')
+                    # But the DB stores dates in Thai timezone (ICT = UTC+7)
+                    # We need to convert UTC -> ICT before extracting the date part
+                    try:
+                        # Try parsing ISO format (with Z or +00:00)
+                        clean = raw_tl.replace('Z', '+00:00')
+                        dt_utc = datetime.fromisoformat(clean)
+                        # Convert to ICT (UTC+7)
+                        ict = timezone(timedelta(hours=7))
+                        dt_local = dt_utc.astimezone(ict)
+                        dates.append(dt_local.strftime('%Y-%m-%d'))
+                    except:
+                        # Fallback: just take first 10 chars
+                        dates.append(raw_tl[:10])
+        
+        # Deduplicate
+        unique_dates = list(set(dates))
+        return jsonify({'success': True, 'dates': unique_dates})
+    except Exception as e:
+        print(f"ERROR fetching available dates from n8n: {str(e)}")
+        return jsonify({'success': False, 'error': f'Failed to fetch dates: {str(e)}'}), 502
+
 @app.route('/api/fetch-n8n-jobs', methods=['POST'])
 def fetch_n8n_jobs():
     """Proxies the call to n8n and returns the raw jobs list."""
@@ -123,8 +221,10 @@ def process_single_job():
              return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
         job = CubemapJob(
-            project_id=str(job_info['project_id']),
-            plan_id=str(job_info['plan_id']),
+            project_id=clean_id(job_info['project_id']),
+            plan_id=clean_id(job_info['plan_id']),
+            project_name=str(job_info.get('project', '') or job_info.get('project_name', '')).strip(),
+            plan_name=str(job_info.get('plan', '') or job_info.get('plan_name', '')).strip(),
             pin_id=p_id,
             timeline=str(job_info['timeline']),
             source_path=s_path

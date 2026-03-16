@@ -229,6 +229,112 @@ body {
   font-weight: 500;
 }
 
+/* New Report Header Styles */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 0;
+  border-bottom: 2px solid #333;
+  margin-bottom: 1.5rem;
+}
+
+.header-left {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.header-logo-container {
+  flex-shrink: 0;
+}
+
+.builk-logo-mock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-icon {
+  font-size: 2rem;
+  color: #2563eb;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-main {
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #2563eb;
+  letter-spacing: 1px;
+}
+
+.header-project-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #000;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.header-subject {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0;
+}
+
+.header-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.report-type {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #000;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.report-date-range {
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Page context override */
+.a4-page .report-header {
+  margin-top: 0;
+  padding-top: 0;
+}
+
 /* Mock Floor Plan Styles */
 .mock-floorplan-section {
   margin-bottom: 1.5rem;
@@ -241,46 +347,78 @@ body {
 .floorplan-container {
   position: relative;
   width: 100%;
-  height: 250px; /* fixed height for the mock */
   background: #f1f5f9;
   border-radius: 0.25rem;
-  overflow: hidden;
-  border: 1px dashed var(--border);
+  overflow: visible; 
+  border: 1px solid var(--border);
+  line-height: 0; 
 }
 
 .floorplan-image {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.7; /* dial down the background photo slightly */
+  height: auto;
+}
+
+.floorplan-scaler {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 0; /* Minimal padding */
+  margin-bottom: 1rem;
+}
+
+@media print {
+  .floorplan-scaler {
+    margin-bottom: 0.5rem;
+  }
 }
 
 .floorplan-marker {
   position: absolute;
-  transform: translate(-50%, -100%); /* Center bottom of marker on point */
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 10;
+  z-index: 30; /* Matches web app z-index */
+  transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
-.marker-icon {
-  font-size: 1.5rem;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+.marker-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
 }
 
 .marker-label {
-  background: var(--text-main);
-  color: white;
+  background: white;
+  color: var(--text-main);
   font-size: 0.65rem;
-  font-weight: 600;
-  padding: 0.1rem 0.3rem;
-  border-radius: 0.2rem;
-  margin-top: -0.25rem;
-  white-space: nowrap;
-  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-top: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
 }
 
+.marker-active .marker-dot {
+  background: #2563eb; /* Primary Blue */
+}
+
+.marker-active .marker-label {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.marker-dimmed {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
 .faces-row {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -497,4 +635,95 @@ body {
   border-radius: 0.5rem;
   border: 1px dashed var(--border);
   margin-top: 2rem;
+}
+
+/* Custom Styles for React Datepicker */
+.react-datepicker-wrapper {
+  display: block;
+}
+.react-datepicker__input-container input {
+  width: 100%;
+}
+.react-datepicker__close-icon::after {
+  background-color: var(--secondary-color);
+  padding: 0;
+  font-size: 14px;
+}
+
+/* Additional tweaks for react-datepicker */
+.react-datepicker {
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.react-datepicker__header {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.react-datepicker__day--selected, 
+.react-datepicker__day--in-selecting-range, 
+.react-datepicker__day--in-range, 
+.react-datepicker__month-text--selected, 
+.react-datepicker__month-text--in-selecting-range, 
+.react-datepicker__month-text--in-range, 
+.react-datepicker__quarter-text--selected, 
+.react-datepicker__quarter-text--in-selecting-range, 
+.react-datepicker__quarter-text--in-range, 
+.react-datepicker__year-text--selected, 
+.react-datepicker__year-text--in-selecting-range, 
+.react-datepicker__year-text--in-range {
+  background-color: var(--primary-color);
+}
+
+.react-datepicker__day:hover, 
+.react-datepicker__month-text:hover, 
+.react-datepicker__quarter-text:hover, 
+.react-datepicker__year-text:hover {
+  background-color: var(--surface-bg);
+}
+
+/* Pin marker dot styles */
+.marker-dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  background-color: #e74c3c;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.marker-active .marker-dot {
+  background-color: #e74c3c;
+  transform: scale(1.2);
+}
+.marker-dimmed {
+  opacity: 0.35;
+}
+.marker-dimmed .marker-dot {
+  background-color: #999;
+}
+.marker-active .marker-label {
+  font-weight: 700;
+  color: #e74c3c;
+  background: rgba(255,255,255,0.9);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+.floorplan-placeholder {
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 2px dashed #ccc;
 }

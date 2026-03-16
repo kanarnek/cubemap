@@ -7,9 +7,11 @@ class CubemapJob:
     """Represents a request to process a 360 image."""
     project_id: str
     plan_id: str
-    pin_id: str
-    timeline: str
-    source_path: str  # Can be a local path or a URL
+    project_name: str = ""
+    plan_name: str = ""
+    pin_id: str = ""
+    timeline: str = ""
+    source_path: str = ""  # Can be a local path or a URL
 
 @dataclass
 class CubemapResult:
@@ -26,6 +28,8 @@ class CubemapResult:
             "=ROW()-1",  # id (auto-increment based on row number)
             self.job.project_id,
             self.job.plan_id,
+            self.job.project_name or "",
+            self.job.plan_name or "",
             self.job.pin_id,
             self.job.timeline,
             self.job.source_path,
