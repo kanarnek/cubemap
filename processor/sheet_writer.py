@@ -3,6 +3,7 @@ from google.oauth2.service_account import Credentials
 from typing import List, Optional, Dict
 from config import GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_SHEET_ID
 from models import CubemapResult
+import json
 
 class SheetWriter:
     """Handles reading and writing metadata to Google Sheets."""
@@ -12,9 +13,15 @@ class SheetWriter:
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        self.credentials = Credentials.from_service_account_file(
-            GOOGLE_SERVICE_ACCOUNT_JSON, scopes=self.scope
-        )
+        
+        # Check if GOOGLE_SERVICE_ACCOUNT_JSON is a raw JSON string or a file path
+        if GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SERVICE_ACCOUNT_JSON.strip().startswith("{"):
+            info = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+            self.credentials = Credentials.from_service_account_info(info, scopes=self.scope)
+        else:
+            self.credentials = Credentials.from_service_account_file(
+                GOOGLE_SERVICE_ACCOUNT_JSON, scopes=self.scope
+            )
         self.client = gspread.authorize(self.credentials)
         self.sheet = self.client.open_by_key(GOOGLE_SHEET_ID).worksheet("cubemap_records")
 

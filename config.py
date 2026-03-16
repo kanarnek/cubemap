@@ -16,8 +16,13 @@ R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "cubemap-assets")
 R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL")  # e.g., https://pub-xxxx.r2.dev
 
 # Google Sheets Configuration
-_service_account_path = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-GOOGLE_SERVICE_ACCOUNT_JSON = str(BASE_DIR / _service_account_path) if _service_account_path else None
+_svc_acc = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+if _svc_acc and _svc_acc.strip().startswith("{"):
+    # It's a raw JSON string (common for Vercel environment variables)
+    GOOGLE_SERVICE_ACCOUNT_JSON = _svc_acc
+else:
+    # It's a path to a file
+    GOOGLE_SERVICE_ACCOUNT_JSON = str(BASE_DIR / _svc_acc) if _svc_acc else None
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
 # Processing Configuration
