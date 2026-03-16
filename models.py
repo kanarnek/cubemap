@@ -7,11 +7,11 @@ class CubemapJob:
     """Represents a request to process a 360 image."""
     project_id: str
     plan_id: str
-    project_name: str = ""
-    plan_name: str = ""
     pin_id: str = ""
     timeline: str = ""
     source_path: str = ""  # Can be a local path or a URL
+    project_name: str = ""
+    plan_name: str = ""
 
 @dataclass
 class CubemapResult:

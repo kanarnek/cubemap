@@ -24,6 +24,14 @@ CACHE_DURATION = 60 # seconds
 cached_records = None
 last_fetch_time = 0
 
+def clean_id(val):
+    """Normalize IDs to string and remove .0 suffix if present."""
+    if val is None: return ""
+    s = str(val).strip()
+    if s.endswith('.0'):
+        return s[:-2]
+    return s
+
 @app.route('/api/records', methods=['GET'])
 def get_records():
     """Returns all records from the Google Sheet (with caching)."""
