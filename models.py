@@ -2,6 +2,14 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 from datetime import datetime
 
+def clean_id(val):
+    """Normalize IDs to string and remove .0 suffix if present."""
+    if val is None: return ""
+    s = str(val).strip()
+    if s.endswith('.0'):
+        return s[:-2]
+    return s
+
 @dataclass
 class CubemapJob:
     """Represents a request to process a 360 image."""

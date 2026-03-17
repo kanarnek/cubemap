@@ -394,14 +394,9 @@ function App() {
       const data = await res.json();
       
       if (data.success) {
-        console.log("Fetched records from Google Sheets:", data.data);
+        console.log("FRESH records from Google Sheets:", data.data);
         setRecords(data.data);
-        console.log(`Total records from sheet: ${data.data.length}`);
-        if (data.data.length > 0) {
-          console.log("Last 3 records from sheet:", data.data.slice(-3));
-        }
-
-        const lastIdx = data.data.length - 1;
+        
         const freshFiltered = data.data.filter((r, idx) => {
           const rProjId = normId(r.project_id);
           const sProjId = normId(savedProject);
@@ -419,14 +414,14 @@ function App() {
           const rProjName = (r.project || '').trim().toLowerCase();
           const rPlanName = (r.plan || '').trim().toLowerCase();
           
-          const matchProjName = sProjName && rProjName && (rProjName.includes(sProjName) || sProjName.includes(rProjName));
-          const matchPlanName = sPlanName && rPlanName && (rPlanName.includes(sPlanName) || sPlanName.includes(rPlanName));
+          // Robust name match: if IDs don't match, maybe the name does?
+          const matchProjName = sProjName && rProjName && (rProjName === sProjName || rProjName.includes(sProjName));
+          const matchPlanName = sPlanName && rPlanName && (rPlanName === sPlanName || rPlanName.includes(sPlanName));
           
           const matchProject = matchProjId || matchProjName;
           const matchPlan = matchPlanId || matchPlanName;
           
           const rDateFull = String(r.timeline || '');
-          // Use current state date because we might have updated it to match n8n
           const activeDate = jobDates[0] || savedDate;
           const sDateISO = String(activeDate);
           let sDateTH = '';
@@ -438,22 +433,14 @@ function App() {
           
           const isMatch = matchProject && matchPlan && matchDate;
           
-          // Log for first 5 AND last 5 records
-          if (idx < 5 || idx > lastIdx - 5 || isMatch) {
-             console.log(`[Row ${idx}] ID:${r.id} | Proj:${rProjId}==${sProjId}(${matchProjId}) "${rProjName}" vs "${sProjName}"(${matchProjName}) | Plan:${rPlanId}==${sPlanId}(${matchPlanId}) "${rPlanName}" vs "${sPlanName}"(${matchPlanName}) | Date:${rDateFull} matching ${sDateISO}|${sDateTH} (${matchDate}) -> Match:${isMatch}`);
+          if (idx < 3 || idx > data.data.length - 3 || isMatch) {
+             console.log(`[Filter Check] Row ${idx} | Match:${isMatch} | Proj:${rProjId} vs ${sProjId} (Name:${rProjName} vs ${sProjName}) | Date:${rDateFull} vs ${sDateISO}`);
           }
           
           return isMatch;
         });
         
-        console.log("Freshly filtered records:", freshFiltered.length);
-        
-        if (freshFiltered.length === 0) {
-          console.warn("No records matched after refresh. Filters:", { savedProject, savedPlan, savedDate });
-          if (data.data.length > 0) {
-            console.log("Sample record from sheet:", data.data[0]);
-          }
-        }
+        console.log(`Filtering Complete. Found ${freshFiltered.length} matches.`);
         setPreviewRecords(freshFiltered);
       } else {
         throw new Error(data.error);

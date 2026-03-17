@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from processor.sheet_writer import SheetWriter
 from main import CubemapPipeline
-from models import CubemapJob
+from models import CubemapJob, clean_id
 
 pipeline = CubemapPipeline()
 
@@ -24,13 +24,6 @@ CACHE_DURATION = 60 # seconds
 cached_records = None
 last_fetch_time = 0
 
-def clean_id(val):
-    """Normalize IDs to string and remove .0 suffix if present."""
-    if val is None: return ""
-    s = str(val).strip()
-    if s.endswith('.0'):
-        return s[:-2]
-    return s
 
 @app.route('/api/records', methods=['GET'])
 def get_records():
@@ -106,6 +99,28 @@ def get_master_data():
     except Exception as e:
         print(f"ERROR fetching master data from n8n: {str(e)}")
         return jsonify({'success': False, 'error': f'Failed to fetch master data: {str(e)}'}), 502
+
+def _get_master_items():
+    """Internal helper to get master data without returning a Response object."""
+    try:
+        n8n_url = 'https://ct-automation.builk.com/webhook/get-master-data'
+        response = requests.get(n8n_url, timeout=90)
+        response.raise_for_status()
+        data = response.json()
+        
+        items = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and 'project_id' in item: items.append(item)
+                elif isinstance(item, dict) and 'json' in item: items.append(item['json'])
+                else: items.append(item)
+        elif isinstance(data, dict):
+            if 'items' in data: items = data['items']
+            else: items = [data]
+        else: items = data
+        return items
+    except:
+        return []
 
 @app.route('/api/available-dates', methods=['POST'])
 def get_available_dates():
@@ -228,11 +243,27 @@ def process_single_job():
         if not all([job_info.get('project_id'), job_info.get('plan_id'), p_id, job_info.get('timeline'), s_path]):
              return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
+        proj_id = clean_id(job_info.get('project_id'))
+        plan_id = clean_id(job_info.get('plan_id'))
+        proj_name = str(job_info.get('project', '') or job_info.get('project_name', '')).strip()
+        plan_name = str(job_info.get('plan', '') or job_info.get('plan_name', '')).strip()
+
+        # If names are missing, try to look them up from master data
+        if not proj_name or not plan_name:
+            master = _get_master_items()
+            for item in master:
+                m_proj_id = clean_id(item.get('project_id'))
+                m_plan_id = clean_id(item.get('plan_id'))
+                if m_proj_id == proj_id and m_plan_id == plan_id:
+                    if not proj_name: proj_name = str(item.get('project_name') or item.get('project') or '').strip()
+                    if not plan_name: plan_name = str(item.get('plan_name') or item.get('plan') or '').strip()
+                    break
+
         job = CubemapJob(
-            project_id=clean_id(job_info['project_id']),
-            plan_id=clean_id(job_info['plan_id']),
-            project_name=str(job_info.get('project', '') or job_info.get('project_name', '')).strip(),
-            plan_name=str(job_info.get('plan', '') or job_info.get('plan_name', '')).strip(),
+            project_id=proj_id,
+            plan_id=plan_id,
+            project_name=proj_name,
+            plan_name=plan_name,
             pin_id=p_id,
             timeline=str(job_info['timeline']),
             source_path=s_path
@@ -254,12 +285,6 @@ def process_single_job():
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 if __name__ == '__main__':
     # Run server single-threaded to avoid gspread/ssl deadlocks
