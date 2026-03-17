@@ -10,9 +10,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from processor.sheet_writer import SheetWriter
 from main import CubemapPipeline
-from models import CubemapJob, clean_id
+from models import CubemapJob, cubemap_clean_id_v2
 
-def clean_id(val):
+def cubemap_clean_id_v2(val):
     """Normalize IDs to string and remove .0 suffix if present."""
     if val is None: return ""
     s = str(val).strip()
@@ -251,8 +251,8 @@ def process_single_job():
         if not all([job_info.get('project_id'), job_info.get('plan_id'), p_id, job_info.get('timeline'), s_path]):
              return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
-        proj_id = clean_id(job_info.get('project_id'))
-        plan_id = clean_id(job_info.get('plan_id'))
+        proj_id = cubemap_clean_id_v2(job_info.get('project_id'))
+        plan_id = cubemap_clean_id_v2(job_info.get('plan_id'))
         proj_name = str(job_info.get('project', '') or job_info.get('project_name', '')).strip()
         plan_name = str(job_info.get('plan', '') or job_info.get('plan_name', '')).strip()
 
@@ -260,8 +260,8 @@ def process_single_job():
         if not proj_name or not plan_name:
             master = _get_master_items()
             for item in master:
-                m_proj_id = clean_id(item.get('project_id'))
-                m_plan_id = clean_id(item.get('plan_id'))
+                m_proj_id = cubemap_clean_id_v2(item.get('project_id'))
+                m_plan_id = cubemap_clean_id_v2(item.get('plan_id'))
                 if m_proj_id == proj_id and m_plan_id == plan_id:
                     if not proj_name: proj_name = str(item.get('project_name') or item.get('project') or '').strip()
                     if not plan_name: plan_name = str(item.get('plan_name') or item.get('plan') or '').strip()

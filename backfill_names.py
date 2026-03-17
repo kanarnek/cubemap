@@ -7,7 +7,7 @@ import requests
 sys.path.append(os.getcwd())
 
 from processor.sheet_writer import SheetWriter
-from reporter.app import _get_master_items, clean_id
+from reporter.app import _get_master_items, cubemap_clean_id_v2
 
 def migrate():
     print("🚀 Starting Data Migration: Backfilling Project/Plan Names...")
@@ -23,8 +23,8 @@ def migrate():
     # Map: (project_id, plan_id) -> (project_name, plan_name)
     name_map = {}
     for item in master:
-        p_id = clean_id(item.get('project_id'))
-        pl_id = clean_id(item.get('plan_id'))
+        p_id = cubemap_clean_id_v2(item.get('project_id'))
+        pl_id = cubemap_clean_id_v2(item.get('plan_id'))
         p_name = str(item.get('project_name') or item.get('project') or '').strip()
         pl_name = str(item.get('plan_name') or item.get('plan') or '').strip()
         if p_id and pl_id:
@@ -55,8 +55,8 @@ def migrate():
         while len(row) < 5:
             row.append("")
             
-        p_id = clean_id(row[1])
-        pl_id = clean_id(row[2])
+        p_id = cubemap_clean_id_v2(row[1])
+        pl_id = cubemap_clean_id_v2(row[2])
         current_p_name = str(row[3]).strip()
         current_pl_name = str(row[4]).strip()
 

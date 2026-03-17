@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 from datetime import datetime
 
-def clean_id(val):
+def cubemap_clean_id_v2(val):
     """Normalize IDs to string and remove .0 suffix if present."""
     if val is None: return ""
     s = str(val).strip()
