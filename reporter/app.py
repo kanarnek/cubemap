@@ -12,6 +12,14 @@ from processor.sheet_writer import SheetWriter
 from main import CubemapPipeline
 from models import CubemapJob, clean_id
 
+def clean_id(val):
+    """Normalize IDs to string and remove .0 suffix if present."""
+    if val is None: return ""
+    s = str(val).strip()
+    if s.endswith('.0'):
+        return s[:-2]
+    return s
+
 pipeline = CubemapPipeline()
 
 app = Flask(__name__)
